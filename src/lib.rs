@@ -205,6 +205,21 @@ pub async fn load_cfg_file(world: &World, file_name: &str) -> Result<usize> {
         count += 1;
     }
     for binding in config.bindings {
+        for (url, connected_urls) in &binding.links {
+            let port = url.instance_port_required()?;
+            for connected_url in connected_urls {
+                let connected_port = connected_url.instance_port_required()?;
+                if port == connected_port {
+                    let artefact_name = url.artefact().unwrap_or("");
+                    let connected_artefact_name = connected_url.artefact().unwrap_or("");
+                    return Err(format!(
+                        "Invalid artefact configuration. Cannot connect {} of {} to {} of {}.",
+                        port, artefact_name, connected_port, connected_artefact_name
+                    )
+                    .into());
+                }
+            }
+        }
         let id = TremorURL::parse(&format!("/binding/{}", binding.id))?;
         info!("Loading {} from file.", id);
         world
